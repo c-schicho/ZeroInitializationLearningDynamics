@@ -1,3 +1,5 @@
+import pandas as pd
+from tbparse import SummaryReader
 from torch import Tensor
 from torch.utils.tensorboard import SummaryWriter
 
@@ -18,3 +20,13 @@ def write_validation_summary(writer: SummaryWriter, loss: float, accuracy: float
 def write_test_summary(writer: SummaryWriter, loss: float, accuracy: float, global_step: int):
     writer.add_scalar(tag="test loss", scalar_value=loss, global_step=global_step)
     writer.add_scalar(tag="test accuracy", scalar_value=accuracy, global_step=global_step)
+
+
+def read_summary_files_to_df(summary_path: str, model_name: str, n_runs: int, n_epochs: int) -> pd.DataFrame:
+    reader = SummaryReader(summary_path)
+    df = reader.scalars
+    df = df[df.tag == "test accuracy"]
+    run_list = list(range(1, n_runs + 1)) * n_epochs
+    df["run"] = run_list
+    df["model"] = model_name
+    return df
