@@ -1,40 +1,49 @@
-from typing import List, Callable
+import math
+from typing import List, Dict, Callable
 
 import torch
 from torch import Tensor
-from torch.nn import Module, ELU, Linear, Sequential, init
+from torch.nn import Module, ELU, Linear, Sequential, init, Parameter
 
 
 class FNN(Module):
 
-    def __init__(self, layer_features: List, act_fun: Callable = ELU(inplace=True)):
+    def __init__(self, linear_layer_features: List[Dict], act_fun: Callable = ELU(inplace=True)):
         super(FNN, self).__init__()
 
-        if len(layer_features) < 2:
-            raise ValueError("layer_features must at least provide input features and output features")
+        if len(linear_layer_features) < 1:
+            raise ValueError("you must at least provide one layer")
 
         fnn = []
-        for i in range(len(layer_features) - 1):
-            fnn.append(Linear(layer_features[i], layer_features[i + 1]))
-            if i < len(layer_features) - 2:
-                fnn.append(act_fun)
+        for layer_features in linear_layer_features:
+            fnn.append(Linear(**layer_features))
+            fnn.append(act_fun)
 
+        fnn.pop()
         self.model = Sequential(*fnn)
 
-    def initialize(self, mode: str, mean: float = 0.0, std: float = 1.0, a: float = 0.0, b: float = 1.0):
-        if mode not in ["default", "uniform", "normal"]:
+    def initialize(self, mode: str, scale_factor: float = 1., softmax_init: bool = False):
+        if mode not in ["default", "uniform", "normal", "normal_in_features"]:
             raise ValueError(f"mode {mode} is not supported")
 
         if mode == "default":
             return
 
-        for layer in self.model:
+        last_idx = len(self.model) - 1
+        for idx, layer in enumerate(self.model):
             if isinstance(layer, Linear):
                 init.zeros_(layer.weight)
-                if mode == "uniform":
-                    init.uniform_(layer.bias, a=a, b=b)
+
+                if softmax_init and idx == last_idx:
+                    layer.bias = Parameter(torch.full_like(layer.bias, math.log(0.1), requires_grad=True))
+
                 elif mode == "normal":
-                    init.normal_(layer.bias, mean=mean, std=std)
+                    init.normal_(layer.bias, std=scale_factor)
+                elif mode == "uniform":
+                    raise NotImplementedError
+                else:
+                    std = math.sqrt(1 / layer.in_features) * scale_factor
+                    init.normal_(layer.bias, std=std)
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)
