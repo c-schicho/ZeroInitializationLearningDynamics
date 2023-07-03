@@ -1,5 +1,5 @@
 import math
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Union
 
 import torch
 from torch import Tensor
@@ -22,9 +22,13 @@ class FNN(Module):
         fnn.pop()
         self.model = Sequential(*fnn)
 
-    def initialize(self, mode: str, scale_factor: float = 1., softmax_init: bool = False):
+    def initialize(self, mode: str, scale_factor: float = 1., softmax_init: bool = False, a: Union[float, None] = None,
+                   b: Union[float, None] = None):
         if mode not in ["default", "uniform", "normal", "normal_in_features"]:
             raise ValueError(f"mode {mode} is not supported")
+
+        if mode == "uniform" and (a is None or b is None):
+            raise ValueError(f"'a' and 'b' must be provided when mode is uniform")
 
         if mode == "default":
             return
@@ -40,7 +44,7 @@ class FNN(Module):
                 elif mode == "normal":
                     init.normal_(layer.bias, std=scale_factor)
                 elif mode == "uniform":
-                    raise NotImplementedError
+                    init.uniform_(layer.bias, a=a, b=b)
                 else:
                     std = math.sqrt(1 / layer.in_features) * scale_factor
                     init.normal_(layer.bias, std=std)

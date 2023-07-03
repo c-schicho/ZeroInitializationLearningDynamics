@@ -1,36 +1,47 @@
 import math
-from typing import Callable, List, Dict, Union
+from typing import Union
 
 import torch
-from torch import Tensor
-from torch.nn import Module, ELU, Linear, Conv2d, Sequential, init, Flatten, Parameter
+from torch.nn import Module, Sequential, Conv2d, MaxPool2d, Flatten, Linear, ELU, init, Parameter, Dropout
 
 
-class CNN(Module):
+class CIFARCNN(Module):
 
-    def __init__(self, conv_layer_features: List[Dict], linear_layer_features: List[Dict],
-                 act_fun: Callable = ELU(inplace=True)):
-        super(CNN, self).__init__()
+    def __init__(self, activation_fun=None):
+        super(CIFARCNN, self).__init__()
+        self.cnn1 = Conv2d(in_channels=3, out_channels=16, kernel_size=3, padding=1)
+        self.cnn2 = Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1)
+        self.cnn3 = Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1)
+        self.cnn4 = Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1)
+        self.pool = MaxPool2d(kernel_size=2, stride=2)
+        self.dropout = Dropout(0.25)
+        self.fnn1 = Linear(128 * 2 * 2, 256)
+        self.fnn2 = Linear(256, 64)
+        self.fnn3 = Linear(64, 10)
+        self.act = activation_fun if activation_fun is not None else ELU(inplace=True)
 
-        if len(conv_layer_features) < 1:
-            raise ValueError("you must at least provide one conv layer")
-
-        if len(linear_layer_features) < 1:
-            raise ValueError("you must at least provide one linear layer")
-
-        cnn = []
-        for layer_features in conv_layer_features:
-            cnn.append(Conv2d(**layer_features))
-            cnn.append(act_fun)
-
-        cnn.append(Flatten())
-
-        for layer_features in linear_layer_features:
-            cnn.append(Linear(**layer_features))
-            cnn.append(act_fun)
-
-        cnn.pop()
-        self.model = Sequential(*cnn)
+        self.model = Sequential(
+            self.cnn1,
+            self.act,
+            self.pool,
+            self.cnn2,
+            self.act,
+            self.pool,
+            self.cnn3,
+            self.act,
+            self.pool,
+            self.cnn4,
+            self.act,
+            self.pool,
+            Flatten(),
+            self.fnn1,
+            self.act,
+            self.dropout,
+            self.fnn2,
+            self.act,
+            self.dropout,
+            self.fnn3
+        )
 
     def initialize(self, mode: str, scale_factor: float = 1., softmax_init: bool = False, a: Union[float, None] = None,
                    b: Union[float, None] = None):
@@ -64,7 +75,7 @@ class CNN(Module):
                         std = math.sqrt(1 / in_features) * scale_factor
                         init.normal_(layer.bias, std=std)
 
-    def forward(self, x: Tensor) -> Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
     def save(self, path: str):
