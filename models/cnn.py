@@ -33,9 +33,9 @@ class CNN(Module):
         cnn.pop()
         self.model = Sequential(*cnn)
 
-    def initialize(self, mode: str, scale_factor: float = 1., softmax_init: bool = False, a: Union[float, None] = None,
-                   b: Union[float, None] = None):
-        initialize_model(self.model, mode, scale_factor, softmax_init, a, b)
+    def initialize(self, mode: str, scale_factor: float = 1., mean: float = 0., softmax_init: bool = False,
+                   a: Union[float, None] = None, b: Union[float, None] = None):
+        initialize_model(self.model, mode, scale_factor, mean, softmax_init, a, b)
 
     def forward(self, x: Tensor) -> Tensor:
         return self.model(x)

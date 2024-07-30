@@ -5,7 +5,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from config import ExperimentConfig
 from train.trainer import Trainer
-from utils import read_summary_files_to_df, plot_summary
+from utils import read_epoch_summary_files_to_df, plot_summary
 
 
 def run_experiments(model, config: ExperimentConfig):
@@ -30,7 +30,7 @@ def run_experiments(model, config: ExperimentConfig):
             test_after_epoch=config.test_after_epoch
         )
 
-    summary_df = read_summary_files_to_df(
+    summary_df = read_epoch_summary_files_to_df(
         summary_path=summary_path,
         model_name=config.model_name,
         n_runs=config.runs,

@@ -12,5 +12,5 @@ class ExperimentConfig:
     epochs: int
     lr: float = 0.001
     runs: int = 5
-    train_summary: bool = False
+    train_summary: bool = True
     test_after_epoch: bool = True

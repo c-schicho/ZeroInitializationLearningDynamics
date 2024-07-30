@@ -6,7 +6,7 @@ import torch
 from torch.nn import Parameter, init, Linear, Conv2d
 
 
-def initialize_model(model, mode: str, scale_factor: float = 1., softmax_init: bool = False,
+def initialize_model(model, mode: str, scale_factor: float = 1., mean: float = 0., softmax_init: bool = False,
                      a: Union[float, None] = None, b: Union[float, None] = None):
     if mode not in ["default", "uniform", "normal", "normal_in_features", "deterministic"]:
         raise ValueError(f"mode {mode} is not supported")
@@ -28,7 +28,7 @@ def initialize_model(model, mode: str, scale_factor: float = 1., softmax_init: b
             if softmax_init and idx == last_idx:
                 layer.bias = Parameter(torch.full_like(layer.bias, math.log(0.1), requires_grad=True))
             elif mode == "normal":
-                init.normal_(layer.bias, std=scale_factor)
+                init.normal_(layer.bias, mean=mean, std=scale_factor)
             elif mode == "uniform":
                 init.uniform_(layer.bias, a=a, b=b)
             elif mode == "deterministic":
